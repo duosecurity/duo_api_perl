@@ -110,8 +110,8 @@ sub api_call {
     $params ||= {};
 
     my $canon_params = $self->canonicalize_params($params);
-    my $date = strftime('%a, %d %b %Y %H:%M:%S %z',
-                        localtime(time()));
+    my $date = strftime('%a, %d %b %Y %H:%M:%S -0000',
+                        gmtime(time()));
     my $auth = $self->sign($method, $path, $canon_params, $date);
 
     my $ua = LWP::UserAgent->new();
