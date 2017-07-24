@@ -1,5 +1,7 @@
 # Overview
 
+[![Build Status](https://travis-ci.org/duosecurity/duo_api_perl.svg?branch=master)](https://travis-ci.org/duosecurity/duo_api_perl)
+
 **duo_api_perl** - Demonstration client to call Duo API methods
 with Perl.
 
