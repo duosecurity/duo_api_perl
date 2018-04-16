@@ -5,15 +5,6 @@
 **duo_api_perl** - Demonstration client to call Duo API methods
 with Perl.
 
-# Duo Verify API
-
-The Duo Verify API provides the ability to call or text (SMS) a phone
-number with a one-time PIN number.
-
-For more information see the Duo Verify API guide:
-
-<http://www.duosecurity.com/docs/duoverify>
-
 # Duo Auth API
 
 The Duo Auth API provides a low-level API for adding strong two-factor
