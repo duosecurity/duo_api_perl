@@ -9,13 +9,13 @@ describe "A Duo Api Iterator" => sub {
         it "dies when a generator is not supplied" => sub {
             throws_ok {
                 my $iter = Duo::API::Iterator->new();
-            } qr/generator.*required/, '';
+            } qr/Missing required arguments: generator/, '';
         };
 
         it "dies if the supplied generator is not a sub ref" => sub{
             throws_ok {
               my $iter = Duo::API::Iterator->new(generator => 42);
-            } qr/generator.*Validation failed for 'CodeRef'/, '';
+            } qr/The generator parameter must be a subroutine reference./, '';
         };
 
         it "returns a new iterator when called with appropriate arguments"

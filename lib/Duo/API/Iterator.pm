@@ -62,9 +62,19 @@ Returns: a list of all remaining items not yet returned by the generator.
 
 =cut
 
-use Moose;
+use Moo;
+use Carp qw(croak);
+use Scalar::Util qw(reftype);
 
-has 'generator' => ( is => 'ro', isa => 'CodeRef', required => 1 );
+has 'generator' => (
+    is => 'ro',
+    isa => sub {
+        my $input = shift;
+        croak "The generator parameter must be a subroutine references."
+            unless reftype($input) eq 'CODE' 
+    },
+    required => 1
+);
 
 sub next {
     my ($self) = @_;
