@@ -223,7 +223,7 @@ sub json_paging_api_call {
 
     # deep copy
     $params = decode_json(encode_json($params));
-    $params->{limit}  ||= $self->paging_limit;
+    $params->{limit}  ||= $self->{paging_limit};
 
     my @objects;
     $params->{offset} ||= 0;
