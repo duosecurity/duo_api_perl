@@ -184,6 +184,17 @@ describe "A duo api client" => sub {
             cmp_bag(\@response_data, [{thing => 1}, {thing => 2}]);
         };
 
+        it "uses client default page size if not specified" => sub {
+          my $iter = $sut->json_paging_api_call('GET', '/admin/v1/admins', {
+              offset => 0,
+              account_id => 'D1234567890123456789',
+          });
+          $iter->next();
+
+          ($captured_request) = @captured_requests;
+          is($captured_request->uri->query_param('limit'), "100");
+        };
+
         it "dies if the response data isn't a list" => sub {
             $mock_response->stubs(
                 content => '{"stat":"OK", "response": {"thing": 1}}'
