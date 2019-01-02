@@ -195,6 +195,16 @@ describe "A duo api client" => sub {
           is($captured_request->uri->query_param('limit'), "100");
         };
 
+        it "uses client default offset if not specified" => sub {
+          my $iter = $sut->json_paging_api_call('GET', '/admin/v1/admins', {
+              account_id => 'D1234567890123456789',
+          });
+          $iter->next();
+
+          ($captured_request) = @captured_requests;
+          is($captured_request->uri->query_param('offset'), "0");
+        };
+
         it "dies if the response data isn't a list" => sub {
             $mock_response->stubs(
                 content => '{"stat":"OK", "response": {"thing": 1}}'
