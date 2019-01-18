@@ -1,6 +1,6 @@
 package Duo::API::Iterator;
 
-our $VERSION = '1.1';
+our $VERSION = '1.2';
 
 =head1 NAME
 
@@ -13,7 +13,7 @@ Duo::API::Iterator
     my $generator = sub {
         return shift @items;
     };
-    my $iter = Duo::API::Iterator(generator => $generator);
+    my $iter = Duo::API::Iterator->new(generator => $generator);
 
     my $first_item = $iter->next(); # 5
     my @remaining = $iter->all();   # (4, 3, 2, 1)
@@ -62,23 +62,23 @@ Returns: a list of all remaining items not yet returned by the generator.
 
 =cut
 
-use Moo;
+use warnings;
+use strict;
 use Carp qw(croak);
-use Scalar::Util qw(reftype);
 
-has 'generator' => (
-    is => 'ro',
-    isa => sub {
-        my $input = shift;
-        croak "The generator parameter must be a subroutine references."
-            unless reftype($input) eq 'CODE' 
-    },
-    required => 1
-);
+sub new {
+    my ($class,%params) = @_;
+    my $g = 'generator';
+    croak "Missing required arguments: $g"
+        unless exists $params{$g};
+    croak "The $g parameter must be a subroutine reference."
+        unless ref($params{$g}) eq 'CODE';
+    return bless { $g => $params{$g} }, $class;
+}
 
 sub next {
     my ($self) = @_;
-    return $self->generator->();
+    return $self->{generator}->();
 }
 
 sub all {
