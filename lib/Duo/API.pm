@@ -128,8 +128,14 @@ sub canonicalize_params {
     my ($self, $params) = @_;
 
     my @ret;
-    while (my ($k, $v) = each(%{$params})) {
-        push(@ret, join('=', CGI::escape($k), CGI::escape($v)));
+    foreach my $key (keys %$params) {
+        if (ref($params->{$key}) eq 'ARRAY') {
+            foreach my $v (@{$params->{$key}}) {
+               push(@ret, join('=', CGI::escape($key), CGI::escape($v)));
+            }
+        } else {
+            push(@ret, join('=', CGI::escape($key), CGI::escape($params->{$key})));
+        }
     }
     return join('&', sort(@ret));
 }
