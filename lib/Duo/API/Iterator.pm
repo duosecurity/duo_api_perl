@@ -65,6 +65,7 @@ Returns: a list of all remaining items not yet returned by the generator.
 use warnings;
 use strict;
 use Carp qw(croak);
+use Scalar::Util qw(reftype);
 
 sub new {
     my ($class,%params) = @_;
@@ -72,7 +73,7 @@ sub new {
     croak "Missing required arguments: $g"
         unless exists $params{$g};
     croak "The $g parameter must be a subroutine reference."
-        unless ref($params{$g}) eq 'CODE';
+        unless reftype($params{$g}) || '' eq 'CODE';
     return bless { $g => $params{$g} }, $class;
 }
 
