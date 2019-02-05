@@ -129,7 +129,7 @@ sub canonicalize_params {
 
     my @ret;
     foreach my $key (keys %$params) {
-        if (ref($params->{$key}) eq 'ARRAY') {
+        if (reftype($params->{$key}) eq 'ARRAY') {
             foreach my $v (@{$params->{$key}}) {
                push(@ret, join('=', CGI::escape($key), CGI::escape($v)));
             }
