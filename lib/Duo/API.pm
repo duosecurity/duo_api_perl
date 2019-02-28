@@ -103,12 +103,19 @@ use CGI qw();
 use Carp qw(croak);
 use Digest::HMAC_SHA1 qw(hmac_sha1_hex);
 use JSON qw(decode_json encode_json);
+use List::Util qw(min);
 use LWP::UserAgent;
 use MIME::Base64 qw(encode_base64);
 use POSIX qw(strftime);
 use Scalar::Util qw(reftype);
+use Time::HiRes;
 
 use Duo::API::Iterator;
+
+use constant MAX_RETRY_ATTEMPTS => 6;
+use constant RETRY_BACKOFF_RATE => 2;
+use constant MAX_RETRY_BACKOFF_SECONDS => 32;
+use constant RATE_LIMIT_HTTP_CODE => 429;
 
 sub new {
     my($proto, $ikey, $skey, $host, $paging_limit) = @_;
@@ -165,7 +172,6 @@ sub api_call {
                         gmtime(time()));
     my $auth = $self->sign($method, $path, $canon_params, $date);
 
-    my $ua = LWP::UserAgent->new();
     my $req = HTTP::Request->new();
     $req->method($method);
     $req->protocol('HTTP/1.1');
@@ -183,11 +189,41 @@ sub api_call {
     }
 
     $req->uri('https://' . $self->{'host'} . $path);
+
+    return $self->make_request($req);
+}
+
+sub make_request {
+    my ($self, $req) = @_;
+    my $ua = LWP::UserAgent->new();
+
     if ($ENV{'DEBUG'}) {
-        print STDERR $req->as_string();
+        print STDERR $req->as_string() . "\n";
     }
+
     my $res = $ua->request($req);
+
+    my $retries = 0;
+    while ($retries < MAX_RETRY_ATTEMPTS && $res->code == RATE_LIMIT_HTTP_CODE) {
+        my $backoff_secs = $self->calculate_backoff($retries);
+        if ($ENV{'DEBUG'}) {
+            print STDERR "Rate limited, waiting $backoff_secs secs and retrying\n";
+        }
+        Time::HiRes::sleep($backoff_secs);
+        $res = $ua->request($req);
+        $retries++;
+    }
+
     return $res;
+}
+
+sub calculate_backoff {
+    my ($self, $retry_attempts) = @_;
+
+    return min(
+        MAX_RETRY_BACKOFF_SECONDS,
+        RETRY_BACKOFF_RATE ** $retry_attempts,
+    ) + rand();
 }
 
 sub json_api_call {
