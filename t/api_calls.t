@@ -260,16 +260,15 @@ describe "A duo api client" => sub {
     };
 
     describe "make_request method" => sub {
-        my @calculate_backoff_calls;
-        my @sleep_calls = [];
+        my @sleep_calls;
         my @response_codes;
+        my @random_nums;
         my $req = mock();
         $req->stubs(
             as_string => "I am a request",
         );
 
         before each => sub {
-            @calculate_backoff_calls = ();
             @sleep_calls = ();
             @response_codes = ();
 
@@ -279,18 +278,16 @@ describe "A duo api client" => sub {
                 },
             );
 
-            $sut->stubs(
-                calculate_backoff => sub {
-                    push @calculate_backoff_calls, $_[1];
-                    return $_[1];
-                },
-            );
-
             Time::HiRes->stubs(
                 sleep => sub {
                     push @sleep_calls, $_[0];
                 },
             );
+
+            # Capture what any rand() calls will generate
+            srand(SEED);
+            @random_nums = map(rand(), (1..100));
+            srand(SEED);
         };
 
         it "makes a single call when 200 response" => sub {
@@ -300,7 +297,6 @@ describe "A duo api client" => sub {
             is($resp, $mock_response);
             is(@captured_requests, 1);
             is($last_captured_req, $req);
-            is(@calculate_backoff_calls, 0);
             is(@sleep_calls, 0);
         };
 
@@ -309,47 +305,30 @@ describe "A duo api client" => sub {
             my $resp = $sut->make_request($req);
 
             is($resp, $mock_response);
-            cmp_deeply(\@captured_requests, [$req, $req]);
+            cmp_deeply(\@captured_requests, [($req) x 2]);
 
-            # Calculate backoff was mocked to return whatever retry attempt this was
-            cmp_deeply(\@calculate_backoff_calls, [0]);
-            cmp_deeply(\@sleep_calls, [0]);
+            cmp_deeply(\@sleep_calls, [
+                1 + $random_nums[0],
+            ]);
         };
 
         it "will only make a max of 7 requests before stopping retries" => sub {
-            @response_codes = (429, 429, 429, 429, 429, 429, 429, 429, 429,
-                429, 429, 429, 429, 429, 429);
+            # Add in more than enough 429 responses so we know we are always rate limited
+            @response_codes = (429) x 10;
 
             my $resp = $sut->make_request($req);
 
             is($resp, $mock_response);
-            cmp_deeply(\@captured_requests, [$req, $req, $req, $req, $req, $req, $req]);
+            cmp_deeply(\@captured_requests, [($req) x 7]);
 
-            # Calculate backoff was mocked to return whatever retry attempt this was
-            cmp_deeply(\@calculate_backoff_calls, [0, 1, 2, 3, 4, 5]);
-            cmp_deeply(\@sleep_calls, [0, 1, 2, 3, 4, 5]);
-        };
-    };
-
-    describe "calculate_backoff method" => sub {
-        my @random_nums;
-
-        before each => sub {
-            # Capture what any rand() calls will generate
-            srand(SEED);
-            @random_nums = map(rand(), (1..100));
-            srand(SEED);
-        };
-
-        it "backs off at the proper rate and adds some randomness" => sub {
-            is($sut->calculate_backoff(0), 1 + $random_nums[0]);
-            is($sut->calculate_backoff(1), 2 + $random_nums[1]);
-            is($sut->calculate_backoff(2), 4 + $random_nums[2]);
-            is($sut->calculate_backoff(3), 8 + $random_nums[3]);
-            is($sut->calculate_backoff(4), 16 + $random_nums[4]);
-            is($sut->calculate_backoff(5), 32 + $random_nums[5]);
-            is($sut->calculate_backoff(6), 32 + $random_nums[6]);
-            is($sut->calculate_backoff(10), 32 + $random_nums[7]);
+            cmp_deeply(\@sleep_calls, [
+                1 + $random_nums[0],
+                2 + $random_nums[1],
+                4 + $random_nums[2],
+                8 + $random_nums[3],
+                16 + $random_nums[4],
+                32 + $random_nums[5],
+            ]);
         };
     };
 };

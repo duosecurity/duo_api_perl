@@ -103,7 +103,6 @@ use CGI qw();
 use Carp qw(croak);
 use Digest::HMAC_SHA1 qw(hmac_sha1_hex);
 use JSON qw(decode_json encode_json);
-use List::Util qw(min);
 use LWP::UserAgent;
 use MIME::Base64 qw(encode_base64);
 use POSIX qw(strftime);
@@ -112,9 +111,9 @@ use Time::HiRes;
 
 use Duo::API::Iterator;
 
-use constant MAX_RETRY_ATTEMPTS => 6;
-use constant RETRY_BACKOFF_RATE => 2;
-use constant MAX_RETRY_BACKOFF_SECONDS => 32;
+use constant MIN_BACKOFF_SECONDS => 1;
+use constant MAX_BACKOFF_SECONDS => 32;
+use constant BACKOFF_FACTOR => 2;
 use constant RATE_LIMIT_HTTP_CODE => 429;
 
 sub new {
@@ -201,29 +200,20 @@ sub make_request {
         print STDERR $req->as_string() . "\n";
     }
 
-    my $res = $ua->request($req);
-
-    my $retries = 0;
-    while ($retries < MAX_RETRY_ATTEMPTS && $res->code == RATE_LIMIT_HTTP_CODE) {
-        my $backoff_secs = $self->calculate_backoff($retries);
-        if ($ENV{'DEBUG'}) {
-            print STDERR "Rate limited, waiting $backoff_secs secs and retrying\n";
+    my $wait_secs = MIN_BACKOFF_SECONDS;
+    while (1) {
+        my $res = $ua->request($req);
+        if ($res->code != RATE_LIMIT_HTTP_CODE || $wait_secs > MAX_BACKOFF_SECONDS) {
+            return $res;
         }
-        Time::HiRes::sleep($backoff_secs);
-        $res = $ua->request($req);
-        $retries++;
+
+        if ($ENV{'DEBUG'}) {
+            print STDERR "Rate limited, waiting $wait_secs secs and retrying\n";
+        }
+
+        Time::HiRes::sleep($wait_secs + rand());
+        $wait_secs *= BACKOFF_FACTOR;
     }
-
-    return $res;
-}
-
-sub calculate_backoff {
-    my ($self, $retry_attempts) = @_;
-
-    return min(
-        MAX_RETRY_BACKOFF_SECONDS,
-        RETRY_BACKOFF_RATE ** $retry_attempts,
-    ) + rand();
 }
 
 sub json_api_call {
