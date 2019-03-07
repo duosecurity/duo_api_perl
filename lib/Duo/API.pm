@@ -2,7 +2,7 @@ package Duo::API;
 use strict;
 use warnings;
 
-our $VERSION = '1.1';
+our $VERSION = '1.2';
 
 =head1 NAME
 
@@ -107,8 +107,14 @@ use LWP::UserAgent;
 use MIME::Base64 qw(encode_base64);
 use POSIX qw(strftime);
 use Scalar::Util qw(reftype);
+use Time::HiRes;
 
 use Duo::API::Iterator;
+
+use constant MIN_BACKOFF_SECONDS => 1;
+use constant MAX_BACKOFF_SECONDS => 32;
+use constant BACKOFF_FACTOR => 2;
+use constant RATE_LIMIT_HTTP_CODE => 429;
 
 sub new {
     my($proto, $ikey, $skey, $host, $paging_limit) = @_;
@@ -165,7 +171,6 @@ sub api_call {
                         gmtime(time()));
     my $auth = $self->sign($method, $path, $canon_params, $date);
 
-    my $ua = LWP::UserAgent->new();
     my $req = HTTP::Request->new();
     $req->method($method);
     $req->protocol('HTTP/1.1');
@@ -183,11 +188,32 @@ sub api_call {
     }
 
     $req->uri('https://' . $self->{'host'} . $path);
+
+    return $self->make_request($req);
+}
+
+sub make_request {
+    my ($self, $req) = @_;
+    my $ua = LWP::UserAgent->new();
+
     if ($ENV{'DEBUG'}) {
-        print STDERR $req->as_string();
+        print STDERR $req->as_string() . "\n";
     }
-    my $res = $ua->request($req);
-    return $res;
+
+    my $wait_secs = MIN_BACKOFF_SECONDS;
+    while (1) {
+        my $res = $ua->request($req);
+        if ($res->code != RATE_LIMIT_HTTP_CODE || $wait_secs > MAX_BACKOFF_SECONDS) {
+            return $res;
+        }
+
+        if ($ENV{'DEBUG'}) {
+            print STDERR "Rate limited, waiting $wait_secs secs and retrying\n";
+        }
+
+        Time::HiRes::sleep($wait_secs + rand());
+        $wait_secs *= BACKOFF_FACTOR;
+    }
 }
 
 sub json_api_call {

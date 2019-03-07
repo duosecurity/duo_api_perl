@@ -7,16 +7,23 @@ use URI::QueryParam;
 
 use Duo::API;
 use LWP::UserAgent;
+use Time::HiRes;
+
+use constant SEED => 987;
 
 describe "A duo api client" => sub {
     my $sut;
     my $mock_response;
-    my $captured_request;
+    my @captured_requests;
+    my $last_captured_req;
     my $ikey;
     my $skey;
     my $host;
+
     before each => sub {
         $mock_response = mock();
+        @captured_requests = ();
+
         $ikey = 'ikey' . rand();
         $skey = 'skey' . rand();
         $host = 'host' . rand();
@@ -24,12 +31,14 @@ describe "A duo api client" => sub {
 
         LWP::UserAgent->stubs(request => sub {
             my ($ua, $req) = @_;
-            $captured_request = $req;
+            push @captured_requests, $req;
+            $last_captured_req = $req;
             return $mock_response;
         });
 
         $mock_response->stubs(
-            content => '{"stat":"OK", "response": [{"thing": 1}, {"thing": 2}], "metadata": {"next_offset": null}}'
+            content => '{"stat":"OK", "response": [{"thing": 1}, {"thing": 2}], "metadata": {"next_offset": null}}',
+            code => 200,
         );
     };
 
@@ -42,12 +51,12 @@ describe "A duo api client" => sub {
                 account_id => 'D1234567890123456789',
             });
 
-            is($captured_request->uri->host, $host);
-            is($captured_request->uri->path, '/admin/v1/admins');
-            is($captured_request->uri->query_param('limit'), "25");
-            is($captured_request->uri->query_param('offset'), "0");
-            is($captured_request->uri->query_param('account_id'), "D1234567890123456789");
-            is($captured_request->method, 'GET');
+            is($last_captured_req->uri->host, $host);
+            is($last_captured_req->uri->path, '/admin/v1/admins');
+            is($last_captured_req->uri->query_param('limit'), "25");
+            is($last_captured_req->uri->query_param('offset'), "0");
+            is($last_captured_req->uri->query_param('account_id'), "D1234567890123456789");
+            is($last_captured_req->method, 'GET');
         };
 
         it "creates the expected POST request" => sub {
@@ -58,13 +67,13 @@ describe "A duo api client" => sub {
             });
 
             my $dummy_uri = URI->new("https://example.com");
-            $dummy_uri->query($captured_request->content);
-            is($captured_request->uri->host, $host);
-            is($captured_request->uri->path, '/admin/v1/admins');
+            $dummy_uri->query($last_captured_req->content);
+            is($last_captured_req->uri->host, $host);
+            is($last_captured_req->uri->path, '/admin/v1/admins');
             is($dummy_uri->query_param('limit'), "25");
             is($dummy_uri->query_param('offset'), "0");
             is($dummy_uri->query_param('account_id'), "D1234567890123456789");
-            is($captured_request->method, 'POST');
+            is($last_captured_req->method, 'POST');
         };
 
         it "returns the expected data" => sub {
@@ -87,12 +96,12 @@ describe "A duo api client" => sub {
                 account_id => 'D1234567890123456789',
             });
 
-            is($captured_request->uri->host, $host);
-            is($captured_request->uri->path, '/admin/v1/admins');
-            is($captured_request->uri->query_param('limit'), "25");
-            is($captured_request->uri->query_param('offset'), "0");
-            is($captured_request->uri->query_param('account_id'), "D1234567890123456789");
-            is($captured_request->method, 'GET');
+            is($last_captured_req->uri->host, $host);
+            is($last_captured_req->uri->path, '/admin/v1/admins');
+            is($last_captured_req->uri->query_param('limit'), "25");
+            is($last_captured_req->uri->query_param('offset'), "0");
+            is($last_captured_req->uri->query_param('account_id'), "D1234567890123456789");
+            is($last_captured_req->method, 'GET');
         };
 
         it "creates the expected POST request" => sub {
@@ -103,13 +112,13 @@ describe "A duo api client" => sub {
             });
 
             my $dummy_uri = URI->new("https://example.com");
-            $dummy_uri->query($captured_request->content);
-            is($captured_request->uri->host, $host);
-            is($captured_request->uri->path, '/admin/v1/admins');
+            $dummy_uri->query($last_captured_req->content);
+            is($last_captured_req->uri->host, $host);
+            is($last_captured_req->uri->path, '/admin/v1/admins');
             is($dummy_uri->query_param('limit'), "25");
             is($dummy_uri->query_param('offset'), "0");
             is($dummy_uri->query_param('account_id'), "D1234567890123456789");
-            is($captured_request->method, 'POST');
+            is($last_captured_req->method, 'POST');
         };
 
         it "returns the expected data" => sub {
@@ -128,16 +137,6 @@ describe "A duo api client" => sub {
     };
 
     describe "json_paging_api_call method" => sub {
-        my @captured_requests;
-        before each => sub {
-            @captured_requests = ();
-            LWP::UserAgent->stubs(request => sub {
-                my ($ua, $req) = @_;
-                push @captured_requests, $req;
-                return $mock_response;
-            });
-        };
-
         it "returns a Duo::Api::Iterator" => sub {
             my $iter = $sut->json_paging_api_call('GET', '/admin/v1/admins', {
                 limit => 25,
@@ -164,13 +163,13 @@ describe "A duo api client" => sub {
             });
             $iter->next();
 
-            ($captured_request) = @captured_requests;
-            is($captured_request->uri->host, $host);
-            is($captured_request->uri->path, '/admin/v1/admins');
-            is($captured_request->uri->query_param('limit'), "25");
-            is($captured_request->uri->query_param('offset'), "0");
-            is($captured_request->uri->query_param('account_id'), "D1234567890123456789");
-            is($captured_request->method, 'GET');
+            ($last_captured_req) = @captured_requests;
+            is($last_captured_req->uri->host, $host);
+            is($last_captured_req->uri->path, '/admin/v1/admins');
+            is($last_captured_req->uri->query_param('limit'), "25");
+            is($last_captured_req->uri->query_param('offset'), "0");
+            is($last_captured_req->uri->query_param('account_id'), "D1234567890123456789");
+            is($last_captured_req->method, 'GET');
         };
 
         it "retrieves the expected data" => sub {
@@ -191,8 +190,8 @@ describe "A duo api client" => sub {
           });
           $iter->next();
 
-          ($captured_request) = @captured_requests;
-          is($captured_request->uri->query_param('limit'), "100");
+          ($last_captured_req) = @captured_requests;
+          is($last_captured_req->uri->query_param('limit'), "100");
         };
 
         it "uses client default offset if not specified" => sub {
@@ -201,8 +200,8 @@ describe "A duo api client" => sub {
           });
           $iter->next();
 
-          ($captured_request) = @captured_requests;
-          is($captured_request->uri->query_param('offset'), "0");
+          ($last_captured_req) = @captured_requests;
+          is($last_captured_req->uri->query_param('offset'), "0");
         };
 
         it "dies if the response data isn't a list" => sub {
@@ -257,6 +256,79 @@ describe "A duo api client" => sub {
             is($req2->uri->query_param('offset'), "2");
             is($req2->uri->query_param('account_id'), "D1234567890123456789");
             is($req2->method, 'GET');
+        };
+    };
+
+    describe "make_request method" => sub {
+        my @sleep_calls;
+        my @response_codes;
+        my @random_nums;
+        my $req = mock();
+        $req->stubs(
+            as_string => "I am a request",
+        );
+
+        before each => sub {
+            @sleep_calls = ();
+            @response_codes = ();
+
+            $mock_response->stubs(
+                code => sub {
+                    return shift(@response_codes) || 200;
+                },
+            );
+
+            Time::HiRes->stubs(
+                sleep => sub {
+                    push @sleep_calls, $_[0];
+                },
+            );
+
+            # Capture what any rand() calls will generate
+            srand(SEED);
+            @random_nums = map(rand(), (1..100));
+            srand(SEED);
+        };
+
+        it "makes a single call when 200 response" => sub {
+            @response_codes = (200);
+            my $resp = $sut->make_request($req);
+
+            is($resp, $mock_response);
+            is(@captured_requests, 1);
+            is($last_captured_req, $req);
+            is(@sleep_calls, 0);
+        };
+
+        it "retries after being rate limited" => sub {
+            @response_codes = (429, 200);
+            my $resp = $sut->make_request($req);
+
+            is($resp, $mock_response);
+            cmp_deeply(\@captured_requests, [($req) x 2]);
+
+            cmp_deeply(\@sleep_calls, [
+                1 + $random_nums[0],
+            ]);
+        };
+
+        it "will only make a max of 7 requests before stopping retries" => sub {
+            # Add in more than enough 429 responses so we know we are always rate limited
+            @response_codes = (429) x 10;
+
+            my $resp = $sut->make_request($req);
+
+            is($resp, $mock_response);
+            cmp_deeply(\@captured_requests, [($req) x 7]);
+
+            cmp_deeply(\@sleep_calls, [
+                1 + $random_nums[0],
+                2 + $random_nums[1],
+                4 + $random_nums[2],
+                8 + $random_nums[3],
+                16 + $random_nums[4],
+                32 + $random_nums[5],
+            ]);
         };
     };
 };
