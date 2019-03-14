@@ -1,6 +1,7 @@
 use Test::Spec;
 use Test::More;
 use Test::Exception;
+require Test::NoWarnings;
 
 use Duo::API::Iterator;
 
@@ -84,6 +85,12 @@ describe "A Duo Api Iterator" => sub {
             is(scalar(@found), $expected_count);
         };
     };
+};
+
+describe "test" => sub {
+        it "had no warnings" => sub {
+                Test::NoWarnings::had_no_warnings()
+        };
 };
 
 runtests;
