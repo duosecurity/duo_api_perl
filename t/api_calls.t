@@ -2,6 +2,7 @@ use Test::Spec;
 use Test::More;
 use Test::Deep;
 use Test::Exception;
+use HTTP::Request;
 use URI;
 use URI::QueryParam;
 
@@ -40,6 +41,38 @@ describe "A duo api client" => sub {
             content => '{"stat":"OK", "response": [{"thing": 1}, {"thing": 2}], "metadata": {"next_offset": null}}',
             code => 200,
         );
+    };
+
+    describe "api_call method" => sub {
+        my $req_params;
+        before each => sub {
+            $req_params = {
+                this => ['a', 'c', 'b'],
+                that => 1,
+                other => 2,
+            };
+            $sut->stubs(
+                canonicalize_params => 'other=2&that=1&this=a&this=b&this=c',
+                encode_request_params => 'other=2&this=a&this=c&this=b&that=1',
+            );
+            HTTP::Request->stubs(
+                make_request => 'that request was definitely executed'
+            );
+        };
+
+        it "uses canonicalized params for the signature" => sub {
+           my $expectation = $sut->expects('sign')->with_deep(
+               'GET', '/over/there/', 'other=2&that=1&this=a&this=b&this=c', ignore()
+           )->returns('this is totally a signature');
+           my $res = $sut->api_call('GET', '/over/there/', $req_params);
+           ok($expectation->verify);
+        };
+
+        it "uses encoded request params for the request" => sub {
+           my $expectation = HTTP::Request->expects('uri')->at_least_once->with("https://$host/over/there/?other=2&this=a&this=c&this=b&that=1");
+           my $res = $sut-> api_call('GET', '/over/there/', $req_params);
+           ok($expectation->verify);
+        };
     };
 
     describe "json_api_call method" => sub {
