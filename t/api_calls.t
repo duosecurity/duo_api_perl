@@ -267,7 +267,7 @@ describe "A duo api client" => sub {
             is($url_params, "this=a&this=c&this=b");
 	};
 
-        it "products the expected parameter string for multiple params" => sub {
+        it "produces the expected parameter string for multiple params" => sub {
             my $url_params = $sut->encode_request_params({
                 this => ['a', 'c', 'b'],
                 that => 1,
@@ -294,7 +294,7 @@ describe "A duo api client" => sub {
             is($canon_params, "this=a&this=b&this=c");
 	};
 
-        it "products the expected parameter string for multiple params" => sub {
+        it "produces the expected parameter string for multiple params" => sub {
             my $url_params = $sut->canonicalize_params({
                 this => ['a', 'c', 'b'],
                 that => 1,
