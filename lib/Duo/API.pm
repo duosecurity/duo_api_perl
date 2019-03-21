@@ -88,7 +88,11 @@ Make a request without parsing the response.
 
 =item canonicalize_params(\%params)
 
-Serialize a parameter hash reference to a string to sign or send.
+Serialize a parameter hash reference to a string to sign.
+
+=item encode_request_params(\%params)
+
+Serialize a parameter hash reference to a string to send.
 
 =item sign($method, $path, $canon_params, $date)
 
@@ -133,17 +137,31 @@ sub new {
 sub canonicalize_params {
     my ($self, $params) = @_;
 
-    my @ret;
+    my @ret = $self->_build_parameter_list($params);
+    return join('&', sort(@ret));
+}
+
+sub encode_request_params {
+    my ($self, $params) = @_;
+
+    my @ret = $self->_build_parameter_list($params);
+    return join('&', @ret);
+}
+
+sub _build_parameter_list {
+    my ($self, $params) = @_;
+
+    my @url_parameters;
     foreach my $key (keys %$params) {
         if (reftype($params->{$key}) eq 'ARRAY') {
             foreach my $v (@{$params->{$key}}) {
-               push(@ret, join('=', CGI::escape($key), CGI::escape($v)));
+               push(@url_parameters, join('=', CGI::escape($key), CGI::escape($v)));
             }
         } else {
-            push(@ret, join('=', CGI::escape($key), CGI::escape($params->{$key})));
+            push(@url_parameters, join('=', CGI::escape($key), CGI::escape($params->{$key})));
         }
     }
-    return join('&', sort(@ret));
+    return @url_parameters;
 }
 
 sub sign {
@@ -166,10 +184,11 @@ sub api_call {
     my ($self, $method, $path, $params) = @_;
     $params ||= {};
 
-    my $canon_params = $self->canonicalize_params($params);
+    my $signing_params = $self->canonicalize_params($params);
+    my $request_params = $self->encode_request_params($params);
     my $date = strftime('%a, %d %b %Y %H:%M:%S -0000',
                         gmtime(time()));
-    my $auth = $self->sign($method, $path, $canon_params, $date);
+    my $auth = $self->sign($method, $path, $signing_params, $date);
 
     my $req = HTTP::Request->new();
     $req->method($method);
@@ -181,10 +200,10 @@ sub api_call {
 
     if (grep(/^$method$/, qw(POST PUT))) {
         $req->header('Content-type' => 'application/x-www-form-urlencoded');
-        $req->content($canon_params);
+        $req->content($request_params);
     }
     else {
-        $path .= '?' . $canon_params;
+        $path .= '?' . $request_params;
     }
 
     $req->uri('https://' . $self->{'host'} . $path);
