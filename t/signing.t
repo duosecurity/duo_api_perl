@@ -1,8 +1,9 @@
 use Test::More;
 use strict;
 use warnings;
+use Test::NoWarnings;
 
-plan(tests => 2);
+plan(tests => 3);
 
 use_ok('Duo::API');
 
