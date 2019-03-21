@@ -3,6 +3,7 @@ use Test::More;
 use Test::Deep;
 use Test::Exception;
 use HTTP::Request;
+require Test::NoWarnings;
 use URI;
 use URI::QueryParam;
 
@@ -409,6 +410,12 @@ describe "A duo api client" => sub {
             ]);
         };
     };
+};
+
+describe "test" => sub {
+	it "had no warnings" => sub {
+		Test::NoWarnings::had_no_warnings()
+	};
 };
 
 runtests;

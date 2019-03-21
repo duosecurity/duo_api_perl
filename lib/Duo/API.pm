@@ -153,7 +153,7 @@ sub _build_parameter_list {
 
     my @url_parameters;
     foreach my $key (keys %$params) {
-        if (reftype($params->{$key}) eq 'ARRAY') {
+        if (ref($params->{$key}) && reftype($params->{$key}) eq 'ARRAY') {
             foreach my $v (@{$params->{$key}}) {
                push(@url_parameters, join('=', CGI::escape($key), CGI::escape($v)));
             }

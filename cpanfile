@@ -9,4 +9,5 @@ on 'test' => sub {
     requires 'Test::More', '1.302086';
     requires 'Test::Spec', '0.54';
     requires 'Test::Exception', '0.43';
+    requires 'Test::NoWarnings', '1.04';
 }
