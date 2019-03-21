@@ -259,6 +259,51 @@ describe "A duo api client" => sub {
         };
     };
 
+    describe "encode_request_params method" => sub {
+        it "produces the expected parameter string for list params" => sub {
+            my $url_params = $sut->encode_request_params({
+                this => ['a', 'c', 'b'],
+            });
+            is($url_params, "this=a&this=c&this=b");
+	};
+
+        it "products the expected parameter string for multiple params" => sub {
+            my $url_params = $sut->encode_request_params({
+                this => ['a', 'c', 'b'],
+                that => 1,
+                other => 2,
+            });
+            my @acceptable_forms = (
+                'this=a&this=c&this=b&that=1&other=2',
+                'this=a&this=c&this=b&other=2&that=1',
+                'other=2&this=a&this=c&this=b&that=1',
+                'other=2&that=1&this=a&this=c&this=b',
+                'that=1&this=a&this=c&this=b&other=2',
+                'that=1&other=2&this=a&this=c&this=b',
+            );
+            my $is_correct = grep { $url_params eq $_ } @acceptable_forms;
+            ok($is_correct) || print ($is_correct, $url_params);
+        };
+    };
+
+    describe "canonicalize_params method" => sub {
+        it "produces the expected parameter string for list params" => sub {
+            my $canon_params = $sut->canonicalize_params({
+                this => ['a', 'c', 'b'],
+            });
+            is($canon_params, "this=a&this=b&this=c");
+	};
+
+        it "products the expected parameter string for multiple params" => sub {
+            my $url_params = $sut->canonicalize_params({
+                this => ['a', 'c', 'b'],
+                that => 1,
+                other => 2,
+            });
+            is($url_params, 'other=2&that=1&this=a&this=b&this=c');
+        };
+    };
+
     describe "make_request method" => sub {
         my @sleep_calls;
         my @response_codes;
