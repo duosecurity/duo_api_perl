@@ -282,7 +282,7 @@ describe "A duo api client" => sub {
                 'that=1&other=2&this=a&this=c&this=b',
             );
             my $is_correct = grep { $url_params eq $_ } @acceptable_forms;
-            ok($is_correct) || print ($is_correct, $url_params);
+            ok($is_correct);
         };
     };
 
