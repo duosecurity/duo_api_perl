@@ -2,6 +2,7 @@ use Test::Spec;
 use Test::More;
 use Test::Deep;
 use Test::Exception;
+use HTTP::Request;
 require Test::NoWarnings;
 use URI;
 use URI::QueryParam;
@@ -41,6 +42,38 @@ describe "A duo api client" => sub {
             content => '{"stat":"OK", "response": [{"thing": 1}, {"thing": 2}], "metadata": {"next_offset": null}}',
             code => 200,
         );
+    };
+
+    describe "api_call method" => sub {
+        my $req_params;
+        before each => sub {
+            $req_params = {
+                this => ['a', 'c', 'b'],
+                that => 1,
+                other => 2,
+            };
+            $sut->stubs(
+                canonicalize_params => 'other=2&that=1&this=a&this=b&this=c',
+                encode_request_params => 'other=2&this=a&this=c&this=b&that=1',
+            );
+            HTTP::Request->stubs(
+                make_request => 'that request was definitely executed'
+            );
+        };
+
+        it "uses canonicalized params for the signature" => sub {
+           my $expectation = $sut->expects('sign')->with_deep(
+               'GET', '/over/there/', 'other=2&that=1&this=a&this=b&this=c', ignore()
+           )->returns('this is totally a signature');
+           my $res = $sut->api_call('GET', '/over/there/', $req_params);
+           ok($expectation->verify);
+        };
+
+        it "uses encoded request params for the request" => sub {
+           my $expectation = HTTP::Request->expects('uri')->at_least_once->with("https://$host/over/there/?other=2&this=a&this=c&this=b&that=1");
+           my $res = $sut-> api_call('GET', '/over/there/', $req_params);
+           ok($expectation->verify);
+        };
     };
 
     describe "json_api_call method" => sub {
@@ -257,6 +290,51 @@ describe "A duo api client" => sub {
             is($req2->uri->query_param('offset'), "2");
             is($req2->uri->query_param('account_id'), "D1234567890123456789");
             is($req2->method, 'GET');
+        };
+    };
+
+    describe "encode_request_params method" => sub {
+        it "produces the expected parameter string for list params" => sub {
+            my $url_params = $sut->encode_request_params({
+                this => ['a', 'c', 'b'],
+            });
+            is($url_params, "this=a&this=c&this=b");
+	};
+
+        it "produces the expected parameter string for multiple params" => sub {
+            my $url_params = $sut->encode_request_params({
+                this => ['a', 'c', 'b'],
+                that => 1,
+                other => 2,
+            });
+            my @acceptable_forms = (
+                'this=a&this=c&this=b&that=1&other=2',
+                'this=a&this=c&this=b&other=2&that=1',
+                'other=2&this=a&this=c&this=b&that=1',
+                'other=2&that=1&this=a&this=c&this=b',
+                'that=1&this=a&this=c&this=b&other=2',
+                'that=1&other=2&this=a&this=c&this=b',
+            );
+            my $is_correct = grep { $url_params eq $_ } @acceptable_forms;
+            ok($is_correct);
+        };
+    };
+
+    describe "canonicalize_params method" => sub {
+        it "produces the expected parameter string for list params" => sub {
+            my $canon_params = $sut->canonicalize_params({
+                this => ['a', 'c', 'b'],
+            });
+            is($canon_params, "this=a&this=b&this=c");
+	};
+
+        it "produces the expected parameter string for multiple params" => sub {
+            my $url_params = $sut->canonicalize_params({
+                this => ['a', 'c', 'b'],
+                that => 1,
+                other => 2,
+            });
+            is($url_params, 'other=2&that=1&this=a&this=b&this=c');
         };
     };
 
