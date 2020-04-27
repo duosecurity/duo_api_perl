@@ -1,6 +1,10 @@
 # Overview
 
 [![Build Status](https://travis-ci.org/duosecurity/duo_api_perl.svg?branch=master)](https://travis-ci.org/duosecurity/duo_api_perl)
+[![Issues](https://img.shields.io/github/issues/duosecurity/duo_api_perl)](https://github.com/duosecurity/duo_api_perl/issues)
+[![Forks](https://img.shields.io/github/forks/duosecurity/duo_api_perl)](https://github.com/duosecurity/duo_api_perl/network/members)
+[![Stars](https://img.shields.io/github/stars/duosecurity/duo_api_perl)](https://github.com/duosecurity/duo_api_perl/stargazers)
+[![License](https://img.shields.io/badge/License-View%20License-orange)](https://github.com/duosecurity/duo_api_perl/blob/master/LICENSE)
 
 **duo_api_perl** - Demonstration client to call Duo API methods
 with Perl.
