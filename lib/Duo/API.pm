@@ -3,6 +3,7 @@ use strict;
 use warnings;
 
 our $VERSION = '1.2.1';
+our $APP_NAME = 'duo_api_perl';
 
 =head1 NAME
 
@@ -197,6 +198,7 @@ sub api_call {
     $req->header('Authorization' => $auth);
     $req->header('Date' => $date);
     $req->header('Host' => $self->{'host'});
+    $req->header('User-Agent' => $APP_NAME . "/" . $VERSION );
 
     if (grep(/^$method$/, qw(POST PUT))) {
         $req->header('Content-type' => 'application/x-www-form-urlencoded');
