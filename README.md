@@ -37,4 +37,12 @@ all Duo accounts.
 
 For more information see the Duo Accounts API guide:
 
+# Testing
+
+```
+$ cpanm --verbose --installdeps --notest .
+$ perl Makefile.PM
+$ make test
+```
+
 <http://www.duosecurity.com/docs/accountsapi>
