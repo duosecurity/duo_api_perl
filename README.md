@@ -9,6 +9,10 @@
 **duo_api_perl** - Demonstration client to call Duo API methods
 with Perl.
 
+## Tested Against Perl Versions:
+* 5.24
+* 5.26
+
 # Duo Auth API
 
 The Duo Auth API provides a low-level API for adding strong two-factor
