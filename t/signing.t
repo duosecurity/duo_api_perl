@@ -27,5 +27,6 @@ my $actual = $client->sign($method,
                            $path,
                            $params,
                            $date);
-my $expected = 'Basic dGVzdF9pa2V5OmYwMTgxMWNiYmY5NTYxNjIzYWI0NWI4OTMwOTYyNjdmZDQ2YTUxNzg=';
+my $expected = 'Basic dGVzdF9pa2V5OjA1MDgwNjUwMzVhMDNiMmExZGUyZjQ1M2U2MjllNzkxZDE4MDMyOWUxNTdmNjVkZjZiM2UwZjA4Mjk5ZDQzMjFlMWM1YzdhN2M3ZWU2YjllNWZjODBkMWZiNmZiZjNhZDVlYjdjNDRkZDNiMzk4NWEwMmMzN2FjYTUzZWMzNjk4';
 is($actual, $expected);
+
