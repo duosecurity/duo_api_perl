@@ -106,7 +106,7 @@ string returned by L<canonicalize_params>.
 
 use CGI qw();
 use Carp qw(croak);
-use Digest::HMAC_SHA1 qw(hmac_sha1_hex);
+use Digest::SHA qw(hmac_sha512_hex);
 use JSON qw(decode_json encode_json);
 use LWP::UserAgent;
 use MIME::Base64 qw(encode_base64);
@@ -173,7 +173,7 @@ sub sign {
                      lc($self->{'host'}),
                      $path,
                      $canon_params);
-    my $sig = hmac_sha1_hex($canon, $self->{'skey'});
+    my $sig = hmac_sha512_hex($canon, $self->{'skey'});
     my $auth = join(':',
                     $self->{'ikey'},
                     $sig);
@@ -302,3 +302,4 @@ sub json_paging_api_call {
 };
 
 1;
+
