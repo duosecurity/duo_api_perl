@@ -21,7 +21,7 @@ Duo for Developers: L<https://www.duosecurity.com/api>
 
 =head1 COPYRIGHT
 
-Copyright (c) 2013 Duo Security
+Copyright (c) 2022 Cisco Systems, Inc. and/or its affiliates
 
 This program is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
