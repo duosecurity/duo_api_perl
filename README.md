@@ -13,6 +13,10 @@ with Perl.
 * 5.24
 * 5.26
 
+## TLS 1.2 and 1.3 Support
+
+Duo_api_perl uses the Perl SSL modules and OpenSSL for TLS operations.  TLS support will depend on the versions of multiple modules, but all recent versions have TLS 1.2 and 1.3 support.
+
 # Duo Auth API
 
 The Duo Auth API provides a low-level API for adding strong two-factor
