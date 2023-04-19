@@ -9,6 +9,7 @@ on:
     
 jobs:
   ci:
+    name: Perl CI - test
     runs-on: ubuntu-latest
 
     strategy:
