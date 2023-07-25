@@ -106,7 +106,10 @@ string returned by L<canonicalize_params>.
 
 use CGI qw();
 use Carp qw(croak);
+use Cwd qw( abs_path );
 use Digest::SHA qw(hmac_sha512_hex);
+use File::Basename qw( dirname );
+use File::Spec::Functions qw(catfile);
 use JSON qw(decode_json encode_json);
 use LWP::UserAgent;
 use MIME::Base64 qw(encode_base64);
@@ -120,16 +123,19 @@ use constant MIN_BACKOFF_SECONDS => 1;
 use constant MAX_BACKOFF_SECONDS => 32;
 use constant BACKOFF_FACTOR => 2;
 use constant RATE_LIMIT_HTTP_CODE => 429;
+use constant DEFAULT_CA_CERTS => catfile(dirname(abs_path((__FILE__))) , 'ca_certs.pem');
 
 sub new {
-    my($proto, $ikey, $skey, $host, $paging_limit) = @_;
+    my($proto, $ikey, $skey, $host, $paging_limit, $ca_certs) = @_;
     my $class = ref($proto) || $proto;
     $paging_limit ||= 100;
+    $ca_certs ||= DEFAULT_CA_CERTS;
     my $self = {
         ikey         => $ikey,
         skey         => $skey,
         host         => $host,
         paging_limit => $paging_limit,
+        ca_certs     => $ca_certs,
     };
     bless($self, $class);
     return $self;
@@ -215,7 +221,13 @@ sub api_call {
 
 sub make_request {
     my ($self, $req) = @_;
-    my $ua = LWP::UserAgent->new();
+
+    my $ua = LWP::UserAgent->new(
+        ssl_opts => {
+            SSL_ca_file     => $self->{ca_certs},
+            verify_hostname => 1,
+        }
+    );
 
     if ($ENV{'DEBUG'}) {
         print STDERR $req->as_string() . "\n";
