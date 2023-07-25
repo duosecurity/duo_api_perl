@@ -2,6 +2,7 @@ requires 'CGI', '4.36';
 requires 'Digest::SHA', '2.01';
 requires 'JSON', '2.94';
 requires 'LWP::UserAgent', '6.26';
+requires 'LWP::Protocol::https', '6.11';
 requires 'MIME::Base64', '3.15';
 requires 'Moo', '2.003004';
 
