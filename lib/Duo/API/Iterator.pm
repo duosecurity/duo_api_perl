@@ -1,6 +1,6 @@
 package Duo::API::Iterator;
 
-our $VERSION = '1.2.1';
+our $VERSION = '1.3.0';
 
 =head1 NAME
 
