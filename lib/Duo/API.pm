@@ -2,7 +2,7 @@ package Duo::API;
 use strict;
 use warnings;
 
-our $VERSION = '1.2.1';
+our $VERSION = '1.3.0';
 our $APP_NAME = 'duo_api_perl';
 
 =head1 NAME
