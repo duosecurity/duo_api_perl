@@ -45,12 +45,12 @@ all Duo accounts.
 
 For more information see the Duo Accounts API guide:
 
+<http://www.duosecurity.com/docs/accountsapi>
+
 # Testing
 
 ```
 $ cpanm --verbose --installdeps --notest .
-$ perl Makefile.PM
+$ perl Makefile.PL
 $ make test
 ```
-
-<http://www.duosecurity.com/docs/accountsapi>
