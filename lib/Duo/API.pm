@@ -37,6 +37,11 @@ Duo::API objects have the following methods:
 Returns a handle to sign and send requests. These parameters are
 obtained when creating an API integration.
 
+An optional C<$enable_ca_pinning> parameter (6th argument, default: true)
+controls whether connections are validated against the pinned CA bundle.
+When set to false, the TLS library validates using the OS trust store
+instead. TLS verification is always enforced regardless of this setting.
+
 =item json_api_call($method, $path, \%params)
 
 Make a request to an API endpoint with the given HTTPS method and
@@ -111,6 +116,7 @@ use Digest::SHA qw(hmac_sha512_hex);
 use File::Basename qw( dirname );
 use File::Spec::Functions qw(catfile);
 use JSON qw(decode_json encode_json);
+use IO::Socket::SSL qw(SSL_VERIFY_PEER);
 use LWP::UserAgent;
 use MIME::Base64 qw(encode_base64);
 use POSIX qw(strftime);
@@ -126,16 +132,18 @@ use constant RATE_LIMIT_HTTP_CODE => 429;
 use constant DEFAULT_CA_CERTS => catfile(dirname(abs_path((__FILE__))) , 'ca_certs.pem');
 
 sub new {
-    my($proto, $ikey, $skey, $host, $paging_limit, $ca_certs) = @_;
+    my($proto, $ikey, $skey, $host, $paging_limit, $ca_certs, $enable_ca_pinning) = @_;
     my $class = ref($proto) || $proto;
     $paging_limit ||= 100;
     $ca_certs ||= DEFAULT_CA_CERTS;
+    $enable_ca_pinning = 1 unless defined($enable_ca_pinning);
     my $self = {
-        ikey         => $ikey,
-        skey         => $skey,
-        host         => $host,
-        paging_limit => $paging_limit,
-        ca_certs     => $ca_certs,
+        ikey              => $ikey,
+        skey              => $skey,
+        host              => $host,
+        paging_limit      => $paging_limit,
+        ca_certs          => $ca_certs,
+        enable_ca_pinning => $enable_ca_pinning,
     };
     bless($self, $class);
     return $self;
@@ -222,11 +230,17 @@ sub api_call {
 sub make_request {
     my ($self, $req) = @_;
 
+    my %ssl_opts = (
+        verify_hostname => 1,
+        SSL_verify_mode => SSL_VERIFY_PEER,
+    );
+
+    if ($self->{enable_ca_pinning}) {
+        $ssl_opts{SSL_ca_file} = $self->{ca_certs};
+    }
+
     my $ua = LWP::UserAgent->new(
-        ssl_opts => {
-            SSL_ca_file     => $self->{ca_certs},
-            verify_hostname => 1,
-        }
+        ssl_opts => \%ssl_opts,
     );
 
     if ($ENV{'DEBUG'}) {

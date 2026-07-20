@@ -8,6 +8,7 @@ use URI;
 use URI::QueryParam;
 
 use Duo::API;
+use IO::Socket::SSL qw(SSL_VERIFY_PEER);
 use LWP::UserAgent;
 use Time::HiRes;
 
@@ -408,6 +409,52 @@ describe "A duo api client" => sub {
                 16 + $random_nums[4],
                 32 + $random_nums[5],
             ]);
+        };
+    };
+
+    describe "CA pinning" => sub {
+        my $req = mock();
+        my %captured_ssl_opts;
+
+        $req->stubs(
+            as_string => "I am a request",
+        );
+
+        before each => sub {
+            %captured_ssl_opts = ();
+
+            LWP::UserAgent->stubs(new => sub {
+                my ($class, %args) = @_;
+                %captured_ssl_opts = %{$args{ssl_opts}};
+                my $ua = mock();
+                $ua->stubs(request => sub { return $mock_response; });
+                return $ua;
+            });
+
+            $mock_response->stubs(code => 200);
+        };
+
+        it "CA pinning is enabled by default" => sub {
+            my $client = Duo::API->new('ikey', 'skey', 'host');
+            is($client->{enable_ca_pinning}, 1);
+            $client->make_request($req);
+            is($captured_ssl_opts{SSL_ca_file}, Duo::API::DEFAULT_CA_CERTS);
+            is($captured_ssl_opts{SSL_verify_mode}, SSL_VERIFY_PEER);
+            is($captured_ssl_opts{verify_hostname}, 1);
+        };
+
+        it "CA pinning can be disabled via constructor parameter" => sub {
+            my $client = Duo::API->new('ikey', 'skey', 'host', undef, undef, 0);
+            is($client->{enable_ca_pinning}, 0);
+            $client->make_request($req);
+            ok(!exists $captured_ssl_opts{SSL_ca_file});
+        };
+
+        it "TLS verification is still enforced when CA pinning is disabled" => sub {
+            my $client = Duo::API->new('ikey', 'skey', 'host', undef, undef, 0);
+            $client->make_request($req);
+            is($captured_ssl_opts{SSL_verify_mode}, SSL_VERIFY_PEER);
+            is($captured_ssl_opts{verify_hostname}, 1);
         };
     };
 };
