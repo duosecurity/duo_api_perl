@@ -4,6 +4,7 @@ use warnings;
 
 our $VERSION = '1.4.0';
 our $APP_NAME = 'duo_api_perl';
+our $CA_BUNDLE_VERSION = '1.0';
 
 =head1 NAME
 
@@ -212,7 +213,8 @@ sub api_call {
     $req->header('Authorization' => $auth);
     $req->header('Date' => $date);
     $req->header('Host' => $self->{'host'});
-    $req->header('User-Agent' => $APP_NAME . "/" . $VERSION );
+    my $ca_pinning_status = $self->{enable_ca_pinning} ? 'enabled' : 'disabled';
+    $req->header('User-Agent' => "$APP_NAME/$VERSION ca_bundle/$CA_BUNDLE_VERSION (ca_pinning=$ca_pinning_status)");
 
     if (grep(/^$method$/, qw(POST PUT))) {
         $req->header('Content-type' => 'application/x-www-form-urlencoded');

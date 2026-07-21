@@ -457,6 +457,24 @@ describe "A duo api client" => sub {
             is($captured_ssl_opts{verify_hostname}, 1);
         };
     };
+
+    describe "user agent string" => sub {
+
+        it "includes ca_bundle version and ca_pinning=enabled by default" => sub {
+            my $res = $sut->json_api_call('GET', '/admin/v1/admins', {});
+            my $ua_header = $last_captured_req->header('User-Agent');
+            my $expected = "duo_api_perl/$Duo::API::VERSION ca_bundle/$Duo::API::CA_BUNDLE_VERSION (ca_pinning=enabled)";
+            is($ua_header, $expected);
+        };
+
+        it "includes ca_pinning=disabled when CA pinning is disabled" => sub {
+            my $client = Duo::API->new($ikey, $skey, $host, undef, undef, 0);
+            $client->json_api_call('GET', '/admin/v1/admins', {});
+            my $ua_header = $last_captured_req->header('User-Agent');
+            my $expected = "duo_api_perl/$Duo::API::VERSION ca_bundle/$Duo::API::CA_BUNDLE_VERSION (ca_pinning=disabled)";
+            is($ua_header, $expected);
+        };
+    };
 };
 
 describe "test" => sub {
