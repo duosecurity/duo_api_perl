@@ -2,7 +2,7 @@ package Duo::API;
 use strict;
 use warnings;
 
-our $VERSION = '1.4.0';
+our $VERSION = '1.5.0';
 our $APP_NAME = 'duo_api_perl';
 our $CA_BUNDLE_VERSION = '1.0';
 
